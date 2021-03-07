@@ -1,0 +1,5 @@
+# ------- Files -------
+
+# Ignore emacs backup files:
+*#
+.#*
