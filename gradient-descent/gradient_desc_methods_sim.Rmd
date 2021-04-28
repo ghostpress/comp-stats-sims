@@ -1,0 +1,118 @@
+---
+title: "NR vs GD vs SGD Methods Simulation"
+author: "Lucia Vilallonga"
+date: "3/1/2021"
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+
+knitr::opts_chunk$set(echo = TRUE)
+
+library(numDeriv)
+library(ggplot2)
+```
+
+## Problem Setup: Linear Regression
+Independent variables: x1 and x2 (column vectors in x); response variable: y (vector)
+```{r}
+n = 2  # Number of rows
+
+# A <- rbind(c(1,0), c(0, 100))  # TODO: test later
+# x <- matrix(rnorm(n), nrow=n)  # TODO: test later
+
+x1 <- c(1, 1, 1, 1, 1)  # column 1
+x2 <- c(1, 2, 3, 4, 5)  # column 2
+
+x <- as.matrix(cbind(x1, x2))
+y <- as.matrix(c(3, 7, 5, 11, 14))
+
+# Define the function to optimize; in this case, RSS: sum(y - B[1]x - B[2])
+f <- function(x, y, B) {
+  
+  RSS <- 0
+  
+  for(i in (1:nrow(y))) {
+    RSS <- RSS + (y - B[1] %*% x - B[2])
+  }
+  
+  return(RSS)
+}
+
+```
+## Matrix Algebra (ground truth)
+The results from the gradient methods following will all be tested for accuracy against
+the matrix algebra output.
+```{r}
+# Compute the vector of coefficients that solves the problem
+summary(lm(y ~ x))
+
+```
+## Newton-Raphson (NR) Method
+```{r}
+newton_raphson <- function(f, y, epsilon=0.0001, beta=0.5, maxiter=1000) {
+  
+  n <- nrow(y)                         # number of rows
+  gamma <- 1                           # initial step-size   
+  x <- matrix(rnorm(n, mean=0, sd=1))  # random initial guess of minimum
+  
+  # solve() inverts the mtx, hessian computes the 2nd deriv
+  x_ <- x - (gamma %*% solve(hessian(f, x)) %*% hessian(f, x))
+  
+  while(f(x_) > f(x)) {
+    gamma <- beta * gamma  # update step-size
+    
+    x_ <- x - (gamma %*% solve(hessian(f, x)) %*% hessian(f, x))
+    x <- x - (gamma %*% solve(hessian(f, x)) %*% hessian(f, x))  # update guess
+    
+    if(norm(jacobian(f, x), "2") < epsilon) {
+      return(x)
+    }
+  }
+}
+```
+
+## Gradient Descent Method
+```{r}
+
+gradient_descent <- function(f, y, epsilon=0.0001, gamma=0.05, maxiter=1000) {
+  
+  n <- nrow(y)                           # number of rows
+  x <- matrix(rnorm(n, mean=0, sd=1))    # random initial guess of the minimum
+  
+  # Compute the gradient and update the guess of the minimum
+  for(i in 1:maxiter) {
+    x <- x - (gamma %*% jacobian(f, x))  
+  }
+  
+  return(x)
+}
+```
+
+## Stochastic Gradient Descent Method
+```{r}
+
+stoch_gradient_descent <- function(f, y, x=NULL, G, pi, gammas, batches, maxiter=1000) {
+  
+  n <- nrow(y)                         # number of rows
+  x <- matrix(rnorm(n, mean=0, sd=1))  # random initial guess of minimum
+  
+  for(i in 1:maxiter) {
+    
+    # Take random samples of the noisy gradient
+    U <- matrix(, nrow=n)
+    for(k in 1:B[i]) {
+      U[k] <- sample(G, 1, replace=FALSE, prob=pi)
+    }
+    
+    # Compute the estimate of the gradient using the samples
+    grad <- (1/B[k]) * sum(G(x, U[1:B[k]]))
+    
+    # Update the guess of the minimum
+    x <- x - gammas[k] %*% grad
+  }
+}
+
+```
+
+
