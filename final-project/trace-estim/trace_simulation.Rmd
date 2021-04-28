@@ -1,0 +1,57 @@
+---
+title: "Simulations for Trace Estimation by Sampling"
+author: "Lucia Vilallonga"
+output: html_notebook
+---
+
+## Methods
+```{r}
+# A method to compute an unbiased estimator for the trace of a psd matrix. The method
+# uses a random isotropic test vector and matrix-vector multiplication to produce the 
+# estimator for the trace. Recall that:
+#  * the trace of a square matrix is the sum of its diagonal elements
+#  * an unbiased estimator has an expected value equal to the quantity to be estimated
+#  * an isotropic vector w is one with the property E[w %*% t(w)] = I
+# For proof that this method does produce an unbiased estimator for the trace of a psd
+# matrix, please see the accompanying proofs.pdf file.
+#
+# Parameters
+# ----------
+# A :  matrix()
+#      The nxn psd matrix for which to estimate the trace
+# k :  integer
+#      The number of samples to take
+#
+# Returns
+# -------
+# values$X :  double
+#             The estimate of trace(A)
+# values$S :  double
+#             The sample variance of the estimate
+
+traceEstimate <- function(A, k) {
+  # assertthat::has_attr()
+  assertthat::is.count(k)
+  
+  samples <- matrix(0, nrow=k, ncol=1)
+  
+  for(i in(1:k)) {
+    test_vector <- matrix(nrow=n, ncol=1)  # draw the isotropic test vector
+    
+    # Compute the sample of the estimate and add it to the list
+    sample <- t(test_vector) %*% (A %*% test_vector)
+    samples[i] <- sample
+  }
+  
+  estimate <- (1/k) * sum(samples)                     # compute the estimate
+  var      <- (1/(k-1)) * sum((samples - estimate)^2)  # compute the variance
+  
+  return(list("X" = estimate, "S" = var))
+}
+```
+
+
+## Simulation
+```{r}
+
+```
