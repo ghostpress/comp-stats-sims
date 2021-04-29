@@ -123,7 +123,7 @@ compute_err <- function(a, b) {
 
 ## Simulation: Is the Estimate Faster and/or More Accurate?
 ```{r}
-set.seed(12345)
+set.seed(987654321)
 
 N <- seq(from=1, to=101, by=5)
 k <- 10
@@ -134,6 +134,7 @@ trace_est_list  <- vector(mode="list", length=length(N))
 runtime_true_list <- vector(mode="list", length=length(N))
 runtime_est_list  <- vector(mode="list", length=length(N))
 variance_list     <- vector(mode="list", length=length(N))
+stddev_list       <- vector(mode="list", length=length(N))
 
 index <- 1
 
@@ -156,6 +157,7 @@ for(n in N) {
   trace_est  <- traceEstimate(A, 100)
   trace_est_list[index] <- trace_est$X
   variance_list[index]  <- trace_est$S
+  stddev_list[index]    <- sqrt(as.double(trace_est$S))
   
   runtime_est_list[index] <- Sys.time() - new_start
   
@@ -170,14 +172,15 @@ ms_err  <- compute_err(trace_est_list, trace_true_list)$mse
 
 ## Plotting the Results
 ```{r}
-data <- data.frame(N, t(abs_err))
+err_data <- data.frame(N, t(abs_err), ms_err, t(t(trace_est_list)), t(t(stddev_list)))
+trace_data <- data.frame(N, t(t(trace_est_list)), t(t(trace_true_list)))
 
-ggplot(data, aes(x=N, y=abs_err)) +
-  geom_point(size=0.3) +
-  geom_line() +
-  geom_abline(slope=0, intercept=avg_err, color="blue") +
-  ggtitle("Trace Estimation: Errors vs Matrix Size") +
-  ylab("Magnitude") +
-  xlab("n rows") +
-  scale_color_manual(labels=c("Absolute Error", "Mean Error"))  # FIXME
+# Basic plots
+
+ggplot(err_data, aes(x=N, y=abs_err)) +
+  geom_point(size=0.5) +
+  geom_abline(intercept=avg_err, slope=0)
+
+ggplot(err_data, aes(x=abs_err)) +
+  geom_histogram()
 ```
