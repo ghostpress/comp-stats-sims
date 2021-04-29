@@ -4,11 +4,17 @@ author: "Lucia Vilallonga"
 output: html_notebook
 ---
 
+## Set Up
+```{r}
+library(ggplot2)
+```
+
 ## Methods
 ```{r}
-# A method to compute an unbiased estimator for the trace of a psd matrix. The method
-# uses a random isotropic test vector and matrix-vector multiplication to produce the 
-# estimator for the trace. Recall that:
+# A method to compute an unbiased estimator for the trace of a psd matrix. 
+# The method uses a random isotropic test vector and matrix-vector 
+# multiplication to produce the estimator for the trace. 
+# Recall that:
 #  * the trace of a square matrix is the sum of its diagonal elements
 #  * an unbiased estimator has an expected value equal to the quantity to be estimated
 #  * an isotropic vector w is one with the property E[w %*% t(w)] = I
@@ -28,15 +34,16 @@ output: html_notebook
 #             The estimate of trace(A)
 # values$S :  double
 #             The sample variance of the estimate
-
+#
 traceEstimate <- function(A, k) {
   # assertthat::has_attr()
   assertthat::is.count(k)
   
   samples <- matrix(0, nrow=k, ncol=1)
   
-  for(i in(1:k)) {
-    test_vector <- matrix(nrow=n, ncol=1)  # draw the isotropic test vector
+  for(i in 1:k) {
+    # Draw the isotropic test vector, eg. from the Gaussian distr. with variance=1
+    test_vector <- matrix(rnorm(n, mean=0, sd=1), nrow=n, ncol=1)  
     
     # Compute the sample of the estimate and add it to the list
     sample <- t(test_vector) %*% (A %*% test_vector)
@@ -50,8 +57,127 @@ traceEstimate <- function(A, k) {
 }
 ```
 
-
-## Simulation
 ```{r}
+# A method to compute the true trace of a matrix, for comparison with the RandNLA method.
+#
+# Parameters
+# ----------
+# A :  matrix()
+#      The nxn psd matrix for which to compute the trace
+#
+# Returns
+# -------
+# tr : double
+#      The trace of the input matrix
+#
+trace <- function(A) {
+  n <- nrow(A)
+  tr <- 0
+  
+  for(i in 1:n) {
+    tr <- tr + A[i,i]
+  }
+  
+  return(tr)
+}
+```
 
+```{r}
+# A method to compute the error of the estimate as compared to the true value.
+# 
+# Parameters
+# ----------
+# a,b  :  list 
+#         The two lists to compare
+# 
+# Returns
+# -------
+# errs :  list
+#         The absolute errors for each element in the lists ($abs), 
+#         the mean error ($avg),  
+#         and the mean squared error ($mse)
+#
+compute_err <- function(a, b) {
+  
+  abs <- matrix(0, nrow=1, ncol=length(a))
+  avg <- 0
+  mse <- 0
+  
+  # Compute the absolute error
+  for(i in 1:length(a)) {
+    abs[i] <- abs(a[[i]] - b[[i]])
+  }
+  
+  # Compute the mean error
+  sum <- sum(abs)
+  avg <- sum / length(a)
+  
+  # Compute the mean squared error
+  for(i in 1:length(a)) {
+    mse[i] <- (a[[i]] - b[[i]])^2 / length(a)
+  }
+  
+  return(list("abs" = abs, "avg" = avg, "mse" = mse))
+}
+```
+
+## Simulation: Is the Estimate Faster and/or More Accurate?
+```{r}
+set.seed(12345)
+
+N <- seq(from=1, to=101, by=5)
+k <- 10
+
+trace_true_list <- vector(mode="list", length=length(N))
+trace_est_list  <- vector(mode="list", length=length(N))
+
+runtime_true_list <- vector(mode="list", length=length(N))
+runtime_est_list  <- vector(mode="list", length=length(N))
+variance_list     <- vector(mode="list", length=length(N))
+
+index <- 1
+
+for(n in N) {
+  # Generate a random psd matrix for the simulation
+  A <- matrix(rnorm(n*n), nrow=n, ncol=n)
+  A <- A %*% t(A)
+  
+  # Compute the true trace and record the runtime
+  start <- Sys.time()
+  
+  trace_true <- trace(A)
+  trace_true_list[index] <- trace_true
+  
+  runtime_true_list[index] <- Sys.time() - start
+  
+  # Compute the estimate of the trace and record the runtime
+  new_start <- Sys.time()
+  
+  trace_est  <- traceEstimate(A, 100)
+  trace_est_list[index] <- trace_est$X
+  variance_list[index]  <- trace_est$S
+  
+  runtime_est_list[index] <- Sys.time() - new_start
+  
+  index <- index + 1
+}
+
+# Compute the errors
+abs_err <- compute_err(trace_est_list, trace_true_list)$abs
+avg_err <- compute_err(trace_est_list, trace_true_list)$avg
+ms_err  <- compute_err(trace_est_list, trace_true_list)$mse
+```
+
+## Plotting the Results
+```{r}
+data <- data.frame(N, t(abs_err))
+
+ggplot(data, aes(x=N, y=abs_err)) +
+  geom_point(size=0.3) +
+  geom_line() +
+  geom_abline(slope=0, intercept=avg_err, color="blue") +
+  ggtitle("Trace Estimation: Errors vs Matrix Size") +
+  ylab("Magnitude") +
+  xlab("n rows") +
+  scale_color_manual(labels=c("Absolute Error", "Mean Error"))  # FIXME
 ```

@@ -3,3 +3,6 @@
 # Ignore emacs backup files:
 *#
 .#*
+
+# Ignore RStudio backup files:
+*.nb.html
