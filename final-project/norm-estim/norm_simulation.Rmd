@@ -1,0 +1,134 @@
+---
+title: "Simulations for Norm Estimation by Sampling"
+author: "Lucia Vilallonga"
+output: html_notebook
+---
+
+## Set Up
+```{r}
+library(gdata)
+```
+
+## Methods
+```{r}
+# A method to draw a random test matrix with isotropic column vectors.
+# Recall that:
+#  * an isotropic vector w is one with the property E[w %*% t(w)] = I
+#
+# Parameters
+# ----------
+# n :  int
+#      The number of rows
+# k :  int
+#      The number of columns
+#
+# Returns
+# -------
+# O :  matrix()
+#      The test matrix
+#
+drawTestM <- function(n, k) {
+  
+  O <- NULL # matrix(0, nrow=n, ncol=k)
+  
+  for(i in (1:k)) {
+    # Draw an isotropic column vector, eg. from the Gaussian distr. with variance=1
+    col <- matrix(rnorm(n, mean=0, sd=1), nrow=n, ncol=1)
+    O <- cbind(O, col)
+  }
+  
+  return(O)
+}
+```
+
+```{r}
+# A method to compute the true trace of a matrix, for use in the norm estimate.
+#
+# Parameters
+# ----------
+# A :  matrix()
+#      The nxn matrix for which to compute the trace
+#
+# Returns
+# -------
+# tr : double
+#      The trace of the input matrix
+#
+trace <- function(A) {
+  n <- nrow(A)
+  tr <- 0
+  
+  for(i in 1:n) {
+    tr <- tr + A[i,i]
+  }
+  
+  return(tr)
+}
+```
+
+```{r}
+# A method to compute an unbiased estimator for the l-2p norm of a matrix.
+# The method uses: a random test matrix (see drawTestM()); matrix-vector multiplication; 
+# and a linear map from the space of self-adjoint square matrices to 
+# the space of general square upper triangular matrices.
+# Recall that:
+#  * the l-2p norm of a matrix is the 2p-root sum of its elements^2p
+#  * an unbiased estimator has an expected value equal to the quantity to be estimated
+#  * an isotropic vector w is one with the property E[w %*% t(w)] = I
+# For proof that this method does produce an unbiased estimator for the l-2p norm of a
+# matrix, please see the accompanying proofs.pdf file.
+#
+# Parameters
+# ----------
+# B :  matrix()
+#      The nxn matrix for which to estimate the l-2p norm
+# p :  int
+#      The power >0 of the norm
+# k :  int
+#      The number of samples to take
+#
+# Returns
+# -------
+# V : double
+#     The estimate of the l-2p norm
+#
+schattenEstimate <- function(B, p, k) {
+  n <- nrow(B)
+  
+  samples <- matrix(0, nrow=n, ncol=n)
+  
+  O <- drawTestM(n, k)  # draw the test matrix from the helper function
+  Y <- B %*% O          # compute the sample matrix
+  X <- t(Y) %*% Y       # compute the Gram matrix
+  
+  # Extract the strict upper triangle of X
+  T_p <- upperTriangle(X)
+
+  # Compute T^(p-1) by repeated multiplication
+  for(i in (1:p-1)) {
+    T_p <- T_p %*% T_p
+  }
+  
+  # Compute and return the estimate of the norm
+  V <- trace(T_p %*% X)  # FIXME: non-conformable arguments error
+  return(V)
+}
+```
+
+## Testing
+```{r}
+drawTestM(10, 3)
+
+B <- matrix(rnorm(10*10, mean=0, sd=1), nrow=10, ncol=10)
+trace(B)
+schattenEstimate(B, 2, 10)  # compute the 2p = l4 norm of B
+```
+
+## Simulation
+
+## Plot the Results
+```{r}
+# TODO: 
+#   plot runtime vs k vs p
+#   plot errors vs k vs p
+```
