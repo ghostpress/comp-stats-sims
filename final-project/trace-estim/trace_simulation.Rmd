@@ -101,7 +101,7 @@ compute_err <- function(a, b) {
   
   abs <- matrix(0, nrow=1, ncol=length(a))
   avg <- 0
-  mse <- 0
+  rms <- 0
   
   # Compute the absolute error
   for(i in 1:length(a)) {
@@ -114,10 +114,10 @@ compute_err <- function(a, b) {
   
   # Compute the mean squared error
   for(i in 1:length(a)) {
-    mse[i] <- (a[[i]] - b[[i]])^2 / length(a)
+    rms[i] <- sqrt((a[[i]] - b[[i]])^2) / length(a)
   }
   
-  return(list("abs" = abs, "avg" = avg, "mse" = mse))
+  return(list("abs" = abs, "avg" = avg, "rms" = rms))
 }
 ```
 
@@ -126,7 +126,7 @@ compute_err <- function(a, b) {
 set.seed(987654321)
 
 N <- seq(from=1, to=101, by=5)
-k <- 10
+k <- 30 
 
 trace_true_list <- vector(mode="list", length=length(N))
 trace_est_list  <- vector(mode="list", length=length(N))
@@ -167,20 +167,30 @@ for(n in N) {
 # Compute the errors
 abs_err <- compute_err(trace_est_list, trace_true_list)$abs
 avg_err <- compute_err(trace_est_list, trace_true_list)$avg
-ms_err  <- compute_err(trace_est_list, trace_true_list)$mse
+rms_err  <- compute_err(trace_est_list, trace_true_list)$rms
 ```
 
 ## Plotting the Results
 ```{r}
-err_data <- data.frame(N, t(abs_err), ms_err, t(t(trace_est_list)), t(t(stddev_list)))
+err_data   <- data.frame(N, t(abs_err), rms_err, t(t(trace_est_list)), t(t(stddev_list)))
 trace_data <- data.frame(N, t(t(trace_est_list)), t(t(trace_true_list)))
+run_data   <- data.frame(N, t(t(runtime_est_list)), t(t(runtime_true_list)))
 
 # Basic plots
 
 ggplot(err_data, aes(x=N, y=abs_err)) +
-  geom_point(size=0.5) +
-  geom_abline(intercept=avg_err, slope=0)
+  geom_point(size=1, color="#316c9f") +
+  geom_point(aes(x=N, y=rms_err), size=1, color="#a00058") +
+  geom_abline(intercept=avg_err, slope=0) +
+  ggtitle("Errors in Trace Estimation for k=30") +
+  ylab("Magnitude") +
+  xlab("N (number of rows)")
 
 ggplot(err_data, aes(x=abs_err)) +
   geom_histogram()
+
+# plot run times
+
+ggplot(run_data, aes(x=N, y=runtime_est_list)) +
+  geom_point(size=1)
 ```
