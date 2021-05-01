@@ -54,7 +54,7 @@ drawTestM <- function(n, k) {
 # tr : double
 #      The trace of the input matrix
 #
-trace <- function(A) {
+computeTrace <- function(A) {
   n <- nrow(A)
   tr <- 0
   
@@ -63,6 +63,37 @@ trace <- function(A) {
   }
   
   return(tr)
+}
+```
+
+```{r}
+# A method to compute the true l-2p norm of a matrix, to compare with the estimate.
+#
+# Parameters
+# ----------
+# A :  matrix()
+#      The nxm matrix for which to compute the norm
+#
+# Returns
+# -------
+# nrm : double
+#       The l-2p norm of the input matrix   
+#
+computeNorm <- function(A, p) {
+  n <- nrow(A)
+  m <- ncol(A)
+  
+  nrm <- 0
+  
+  for(j in (1:m)) {
+    for(i in (1:n)) {
+      
+      innersum <- sum(abs(A[i,j])^(2*p))
+      nrm <- nrm + innersum^(1/(2*p))
+    }
+  }
+  
+  return(nrm)
 }
 ```
 
@@ -102,7 +133,8 @@ schattenEstimate <- function(B, p, k) {
   X <- t(Y) %*% Y       # compute the Gram matrix
   
   # Extract the strict upper triangle of X
-  T_p <- upperTriangle(X)
+  T_p <- X
+  T_p[lower.tri(T_p)] <- 0
 
   # Compute T^(p-1) by repeated multiplication
   for(i in (1:p-1)) {
@@ -110,18 +142,20 @@ schattenEstimate <- function(B, p, k) {
   }
   
   # Compute and return the estimate of the norm
-  V <- trace(T_p %*% X)  # FIXME: non-conformable arguments error
+  V <- computeTrace(T_p %*% X)  
   return(V)
 }
 ```
 
 ## Testing
 ```{r}
-drawTestM(10, 3)
+#drawTestM(10, 3)
 
 B <- matrix(rnorm(10*10, mean=0, sd=1), nrow=10, ncol=10)
-trace(B)
-schattenEstimate(B, 2, 10)  # compute the 2p = l4 norm of B
+#trace(B)
+x <- schattenEstimate(B, 2, 10)  # compute the 2p = l4 norm of B
+computeNorm(B, 1)  # test with Frobenius norm
+norm(B, "F")       # FIXME: wrong value
 ```
 
 ## Simulation
