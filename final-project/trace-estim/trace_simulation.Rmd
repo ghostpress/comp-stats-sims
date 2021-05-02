@@ -148,13 +148,13 @@ for(n in N) {
   # Record the true value and run time in the next length(K) rows
   for(i in index_true:(index_true + length(K) - 1)) {
     results[i, "Runtime (true)"] <- runtime
-    results[i, "True Value"] <- trace_true
+    results[i, "True Value"]     <- trace_true
   }
   
   index_true <- index_true + length(K)
   
   for(k in K) {
-    results[index_est, "n (rows)"] <- n
+    results[index_est, "n (rows)"]    <- n
     results[index_est, "k (samples)"] <- k
 
     # Compute the estimate of the trace and record the runtime
@@ -162,9 +162,9 @@ for(n in N) {
   
     trace_est <- traceEstimate(A, k)
     results[index_est, "Runtime (est.)"] <- Sys.time() - new_start
-    results[index_est, "Estimate"] <- trace_est$X
+    results[index_est, "Estimate"]       <- trace_est$X
 
-    results[index_est, "Sample Variance"] <- trace_est$S
+    results[index_est, "Sample Variance"]  <- trace_est$S
     results[index_est, "Sample Std. Dev."] <- sqrt(as.double(trace_est$S))
   
     index_est <- index_est + 1
