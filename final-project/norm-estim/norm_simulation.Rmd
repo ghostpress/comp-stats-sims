@@ -6,7 +6,6 @@ output: html_notebook
 
 ## Set Up
 ```{r}
-library(gdata)
 ```
 
 ## Methods
@@ -84,13 +83,13 @@ computeNorm <- function(A, p) {
   m <- ncol(A)
   
   nrm <- 0
+  innersum <- 0
   
   for(j in (1:m)) {
     for(i in (1:n)) {
-      
-      innersum <- sum(abs(A[i,j])^(2*p))
-      nrm <- nrm + innersum^(1/(2*p))
+      innersum <- sum( abs(A[i,j])^(2*p) )
     }
+    nrm <- nrm + innersum^(1/(2*p))
   }
   
   return(nrm)
@@ -128,18 +127,26 @@ schattenEstimate <- function(B, p, k) {
   
   samples <- matrix(0, nrow=n, ncol=n)
   
-  O <- drawTestM(n, k)  # draw the test matrix from the helper function
+  O <- drawTestM(n, k)  # draw the test matrix
+  print("O:")
+  print(O)
   Y <- B %*% O          # compute the sample matrix
-  X <- t(Y) %*% Y       # compute the Gram matrix
+  print("Y:")
+  print(Y)
+  X <- t(Y) %*% Y       # compute the Gram matrix  FIXME: becomes large very quickly
+  print("X:")
+  print(X)
   
   # Extract the strict upper triangle of X
   T_p <- X
   T_p[lower.tri(T_p)] <- 0
+  print(T_p)
 
   # Compute T^(p-1) by repeated multiplication
   for(i in (1:p-1)) {
     T_p <- T_p %*% T_p
   }
+  print(T_p)
   
   # Compute and return the estimate of the norm
   V <- computeTrace(T_p %*% X)  
@@ -153,9 +160,8 @@ schattenEstimate <- function(B, p, k) {
 
 B <- matrix(rnorm(10*10, mean=0, sd=1), nrow=10, ncol=10)
 #trace(B)
-x <- schattenEstimate(B, 2, 10)  # compute the 2p = l4 norm of B
+x <- schattenEstimate(B, 1, 10)  # compute the 2p = l4 norm of B
 computeNorm(B, 1)  # test with Frobenius norm
-norm(B, "F")       # FIXME: wrong value
 ```
 
 ## Simulation
