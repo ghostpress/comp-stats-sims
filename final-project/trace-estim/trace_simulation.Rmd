@@ -36,7 +36,6 @@ library(ggplot2)
 #             The sample variance of the estimate
 #
 traceEstimate <- function(A, k) {
-  # assertthat::has_attr()
   assertthat::is.count(k)
   
   samples <- matrix(0, nrow=k, ncol=1)
@@ -112,7 +111,7 @@ compute_err <- function(a, b) {
   sum <- sum(abs)
   avg <- sum / length(a)
   
-  # Compute the mean squared error
+  # Compute the root mean squared error (RMSE)
   for(i in 1:length(a)) {
     rms[i] <- sqrt((a[[i]] - b[[i]])^2) / length(a)
   }
@@ -121,22 +120,23 @@ compute_err <- function(a, b) {
 }
 ```
 
-## Simulation: Is the Estimate Faster and/or More Accurate?
+## Simulation: Is the Estimate Faster? How Accurate is it?
 ```{r}
 set.seed(987654321)
 
 N <- seq(from=1, to=101, by=5)
-k <- 30 
+K <- seq(from=1, to=101, by=5)
 
-trace_true_list <- vector(mode="list", length=length(N))
-trace_est_list  <- vector(mode="list", length=length(N))
-
+trace_true_list   <- vector(mode="list", length=length(N))
 runtime_true_list <- vector(mode="list", length=length(N))
-runtime_est_list  <- vector(mode="list", length=length(N))
-variance_list     <- vector(mode="list", length=length(N))
-stddev_list       <- vector(mode="list", length=length(N))
 
-index <- 1
+trace_est_list    <- vector(mode="list", length=length(N) + length(K))
+runtime_est_list  <- vector(mode="list", length=length(N) + length(K))
+variance_list     <- vector(mode="list", length=length(N) + length(K))
+stddev_list       <- vector(mode="list", length=length(N) + length(K))
+
+index_true <- 1
+index_est  <- 1
 
 for(n in N) {
   # Generate a random psd matrix for the simulation
@@ -147,34 +147,38 @@ for(n in N) {
   start <- Sys.time()
   
   trace_true <- trace(A)
-  trace_true_list[index] <- trace_true
+  runtime_true_list[index_true] <- Sys.time() - start
   
-  runtime_true_list[index] <- Sys.time() - start
+  trace_true_list[index_true] <- trace_true
   
-  # Compute the estimate of the trace and record the runtime
-  new_start <- Sys.time()
+  index_true <- index_true + 1
   
-  trace_est  <- traceEstimate(A, 100)
-  trace_est_list[index] <- trace_est$X
-  variance_list[index]  <- trace_est$S
-  stddev_list[index]    <- sqrt(as.double(trace_est$S))
+  for(k in K) {
+    # Compute the estimate of the trace and record the runtime
+    new_start <- Sys.time()
   
-  runtime_est_list[index] <- Sys.time() - new_start
+    trace_est  <- traceEstimate(A, 100)
+    runtime_est_list[index_est] <- Sys.time() - new_start
+
+    trace_est_list[index_est] <- trace_est$X
+    variance_list[index_est]  <- trace_est$S
+    stddev_list[index_est]    <- sqrt(as.double(trace_est$S))
   
-  index <- index + 1
+    index_est <- index_est + 1
+  }
 }
 
 # Compute the errors
 abs_err <- compute_err(trace_est_list, trace_true_list)$abs
 avg_err <- compute_err(trace_est_list, trace_true_list)$avg
-rms_err  <- compute_err(trace_est_list, trace_true_list)$rms
+rms_err <- compute_err(trace_est_list, trace_true_list)$rms
 ```
 
 ## Plotting the Results
 ```{r}
-err_data   <- data.frame(N, t(abs_err), rms_err, t(t(trace_est_list)), t(t(stddev_list)))
-trace_data <- data.frame(N, t(t(trace_est_list)), t(t(trace_true_list)))
-run_data   <- data.frame(N, t(t(runtime_est_list)), t(t(runtime_true_list)))
+# Create a data frame with the results
+results <- data.frame(matrix(ncol=5, nrow=length(N) + length(K)))
+colnames(results) <- c("n (rows)", "k (samples)", "Estimate", "True Value", "RMSE")
 
 # Basic plots
 
