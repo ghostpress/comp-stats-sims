@@ -125,15 +125,11 @@ compute_err <- function(a, b) {
 set.seed(987654321)
 
 N <- seq(from=1, to=101, by=5)
-K <- seq(from=1, to=101, by=5)
+K <- seq(from=2, to=202, by=10)
 
-trace_true_list   <- vector(mode="list", length=length(N))
-runtime_true_list <- vector(mode="list", length=length(N))
-
-trace_est_list    <- vector(mode="list", length=length(N) + length(K))
-runtime_est_list  <- vector(mode="list", length=length(N) + length(K))
-variance_list     <- vector(mode="list", length=length(N) + length(K))
-stddev_list       <- vector(mode="list", length=length(N) + length(K))
+# Create a data frame with the results
+results <- data.frame(matrix(ncol=9, nrow=length(N) * length(K)))
+colnames(results) <- c("n (rows)", "k (samples)", "Estimate", "True Value", "RMSE", "Runtime (est.)", "Runtime (true)", "Sample Variance", "Sample Std. Dev.")
 
 index_true <- 1
 index_est  <- 1
@@ -147,38 +143,43 @@ for(n in N) {
   start <- Sys.time()
   
   trace_true <- trace(A)
-  runtime_true_list[index_true] <- Sys.time() - start
+  runtime    <- Sys.time() - start
   
-  trace_true_list[index_true] <- trace_true
+  # Record the true value and run time in the next length(K) rows
+  for(i in index_true:(index_true + length(K) - 1)) {
+    results[i, "Runtime (true)"] <- runtime
+    results[i, "True Value"] <- trace_true
+  }
   
-  index_true <- index_true + 1
+  index_true <- index_true + length(K)
   
   for(k in K) {
+    results[index_est, "n (rows)"] <- n
+    results[index_est, "k (samples)"] <- k
+
     # Compute the estimate of the trace and record the runtime
     new_start <- Sys.time()
   
-    trace_est  <- traceEstimate(A, 100)
-    runtime_est_list[index_est] <- Sys.time() - new_start
+    trace_est <- traceEstimate(A, k)
+    results[index_est, "Runtime (est.)"] <- Sys.time() - new_start
+    results[index_est, "Estimate"] <- trace_est$X
 
-    trace_est_list[index_est] <- trace_est$X
-    variance_list[index_est]  <- trace_est$S
-    stddev_list[index_est]    <- sqrt(as.double(trace_est$S))
+    results[index_est, "Sample Variance"] <- trace_est$S
+    results[index_est, "Sample Std. Dev."] <- sqrt(as.double(trace_est$S))
   
     index_est <- index_est + 1
   }
 }
 
 # Compute the errors
-abs_err <- compute_err(trace_est_list, trace_true_list)$abs
-avg_err <- compute_err(trace_est_list, trace_true_list)$avg
-rms_err <- compute_err(trace_est_list, trace_true_list)$rms
+for(i in 1:nrow(results)) {
+  results[i, "RMSE"] <- compute_err(results[i, "Estimate"], results[i, "True Value"])$rms
+}
 ```
 
 ## Plotting the Results
 ```{r}
-# Create a data frame with the results
-results <- data.frame(matrix(ncol=5, nrow=length(N) + length(K)))
-colnames(results) <- c("n (rows)", "k (samples)", "Estimate", "True Value", "RMSE")
+
 
 # Basic plots
 
