@@ -1,7 +1,9 @@
 ---
 title: "Simulations for Trace Estimation by Sampling"
 author: "Lucia Vilallonga"
-output: html_notebook
+output:
+  html_document:
+    df_print: paged
 ---
 
 ## Set Up
@@ -263,4 +265,15 @@ ggplot(example3, aes(x=k, y=RuntimeEst)) +
   ylab("Runtime (s)") +
   xlab("Samples") +
   scale_color_manual(name="Legend", values=c("#EA6596", "#6E6A73"), labels=c("Sampling method", "Direct method"))
+
+# Combined plot of runtimes vs number of samples with base method comparison
+ggplot(example1, aes(x=k, y=RuntimeEst)) +
+  geom_point(data=example1, aes(color="#46CC6D"), size=1, show.legend=TRUE) +
+  geom_point(data=example2, aes(color="#2993EC"), size=1, show.legend=TRUE) +
+  geom_point(data=example3, aes(color="#EA6596"), size=1, show.legend=TRUE) +
+  geom_line(aes(y=RuntimeTrue, color="#6E6A73"), linetype="dashed") +
+  ggtitle(label="Runtimes vs Number of Samples: Estimate vs Direct Method") +
+  ylab("Runtime (s)") +
+  xlab("Samples") +
+  scale_color_manual(name="Legend", values=c("#46CC6D", "#2993EC", "#EA6596", "#6E6A73"), labels=c("Sampling method, n=2", "Sampling method, n=25", "Sampling method, n=50", "Direct method"))
 ```
