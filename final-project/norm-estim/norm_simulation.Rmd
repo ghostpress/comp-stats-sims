@@ -58,20 +58,15 @@ computeNorm <- function(A, p) {
   n <- nrow(A)
   m <- ncol(A)
   
+  sing_vals <- svd(A)$d
   nrm <- 0
-  innersum <- 0
   
-  for(j in (1:m)) {
-    for(i in (1:n)) {
-      innersum <- sum( abs(A[i,j])^(2*p) )
-    }
-    nrm <- nrm + innersum^(1/(2*p))
+  for(i in (1:min(m,n))) {
+    nrm <- nrm + (sing_vals[i]^p)
   }
   
-  return(nrm^(2*p))
+  return(nrm^(1/p))
 }
-
-# FIXME: incorrect value
 ```
 
 ```{r}
@@ -130,15 +125,11 @@ schattenEstimate <- function(B, p, k) {
 
 ## Testing
 ```{r}
-
-
 A <- matrix(rnorm(10*10, mean=0, sd=1), nrow=10, ncol=10)
+
 x <- schattenEstimate(A, 1, 10)  # compute the 2p = l2 norm of B
-#computeNorm(B, 1)               # test with Frobenius norm
-(norm(B, type="F"))
-
-
-
+computeNorm(A, 2)                # test with Frobenius norm
+(norm(A, type="F"))
 ```
 
 ## Simulation
