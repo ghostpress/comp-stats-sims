@@ -124,12 +124,12 @@ compute_err <- function(a, b) {
 ```{r}
 set.seed(987654321)
 
-N <- seq(from=1, to=101, by=5)
-K <- seq(from=2, to=202, by=10)
+N <- seq(from=1, to=50)
+K <- seq(from=2, to=100)
 
 # Create a data frame with the results
 results <- data.frame(matrix(ncol=9, nrow=length(N) * length(K)))
-colnames(results) <- c("n (rows)", "k (samples)", "Estimate", "True Value", "RMSE", "Runtime (est.)", "Runtime (true)", "Sample Variance", "Sample Std. Dev.")
+colnames(results) <- c("n", "k", "Estimate", "TrueValue", "RMSE", "RuntimeEst", "RuntimeTrue", "SampleVariance", "SampleStdDev")
 
 index_true <- 1
 index_est  <- 1
@@ -147,25 +147,25 @@ for(n in N) {
   
   # Record the true value and run time in the next length(K) rows
   for(i in index_true:(index_true + length(K) - 1)) {
-    results[i, "Runtime (true)"] <- runtime
-    results[i, "True Value"]     <- trace_true
+    results[i, "RuntimeTrue"] <- runtime
+    results[i, "TrueValue"]     <- trace_true
   }
   
   index_true <- index_true + length(K)
   
   for(k in K) {
-    results[index_est, "n (rows)"]    <- n
-    results[index_est, "k (samples)"] <- k
+    results[index_est, "n"]    <- n
+    results[index_est, "k"] <- k
 
     # Compute the estimate of the trace and record the runtime
     new_start <- Sys.time()
   
     trace_est <- traceEstimate(A, k)
-    results[index_est, "Runtime (est.)"] <- Sys.time() - new_start
+    results[index_est, "RuntimeEst"] <- Sys.time() - new_start
     results[index_est, "Estimate"]       <- trace_est$X
 
-    results[index_est, "Sample Variance"]  <- trace_est$S
-    results[index_est, "Sample Std. Dev."] <- sqrt(as.double(trace_est$S))
+    results[index_est, "SampleVariance"]  <- trace_est$S
+    results[index_est, "SampleStdDev"] <- sqrt(as.double(trace_est$S))
   
     index_est <- index_est + 1
   }
@@ -173,29 +173,94 @@ for(n in N) {
 
 # Compute the errors
 for(i in 1:nrow(results)) {
-  results[i, "RMSE"] <- compute_err(results[i, "Estimate"], results[i, "True Value"])$rms
+  results[i, "RMSE"] <- compute_err(results[i, "Estimate"], results[i, "TrueValue"])$rms
 }
 ```
 
 ## Plotting the Results
 ```{r}
+# Plot of trace estimate vs number of samples 
+# Examples: n=2, n=25, n = 50
+example1 <- results[100:198,]
+example2 <- results[2377:2475,]
+example3 <- results[4852:4950,]
+
+ggplot(example1, aes(x=k, y=Estimate)) +
+  geom_point(aes(color="#2160ad"), size=1, show.legend=TRUE) +
+  geom_line(aes(color="#2160ad")) +
+  geom_line(aes(y=2.363978, color="#6E6A73"), linetype="dotdash", show.legend=TRUE) +
+  ggtitle(label="Trace Estimate vs Number of Samples", subtitle="For a psd matrix with n=2 rows") +
+  xlab("Samples") +
+  scale_color_manual(name="Legend", values=c("#2160ad", "#6E6A73"), labels=c("Estimate of the trace", "True value of the trace"))
+
+ggplot(example2, aes(x=k, y=Estimate)) +
+  geom_point(aes(color="#2160ad"), size=1, show.legend=TRUE) +
+  geom_line(aes(color="#2160ad")) +
+  geom_line(aes(y=599.3642, color="#6E6A73"), linetype="dotdash", show.legend=TRUE) +
+  ggtitle(label="Trace Estimate vs Number of Samples", subtitle="For a psd matrix with n=25 rows") +
+  xlab("Samples") +
+  scale_color_manual(name="Legend", values=c("#2160ad", "#6E6A73"), labels=c("Estimate of the trace", "True value of the trace"))
+
+ggplot(example3, aes(x=k, y=Estimate)) +
+  geom_point(aes(color="#2160ad"), size=1, show.legend=TRUE) +
+  geom_line(aes(color="#2160ad")) +
+  geom_line(aes(y=example3[2, "TrueValue"], color="#6E6A73"), linetype="dotdash", show.legend=TRUE) +
+  ggtitle(label="Trace Estimate vs Number of Samples", subtitle="For a psd matrix with n=50 rows") +
+  xlab("Samples") +
+  scale_color_manual(name="Legend", values=c("#2160ad", "#6E6A73"), labels=c("Estimate of the trace", "True value of the trace"))
 
 
-# Basic plots
+# Plot of RMSE vs number of samples
+ggplot(results, aes(x=k, y=RMSE)) +
+  geom_point(size=0.5) +
+  ggtitle("RMSE vs Number of Samples") +
+  xlab("Samples")
 
-ggplot(err_data, aes(x=N, y=abs_err)) +
-  geom_point(size=1, color="#316c9f") +
-  geom_point(aes(x=N, y=rms_err), size=1, color="#a00058") +
-  geom_abline(intercept=avg_err, slope=0) +
-  ggtitle("Errors in Trace Estimation for k=30") +
-  ylab("Magnitude") +
-  xlab("N (number of rows)")
 
-ggplot(err_data, aes(x=abs_err)) +
-  geom_histogram()
+# Plot of RMSE vs number of rows
+ggplot(results, aes(x=n, y=RMSE)) +
+  geom_point(size=0.5) +
+  ggtitle("RMSE vs Number of Rows") +
+  xlab("Rows")
 
-# plot run times
 
-ggplot(run_data, aes(x=N, y=runtime_est_list)) +
-  geom_point(size=1)
+# Plot of runtimes vs number of samples for n=2, 25, and 50
+ggplot(example1, aes(x=k, y=RuntimeEst)) +
+  geom_point(aes(color="#46CC6D"), size=1, show.legend=TRUE) +                                    # example 1
+  geom_point(data=example2, aes(x=k, y=RuntimeEst, color="#2993EC"), size=1, show.legend=TRUE) +  # example 2
+  geom_point(data=example3, aes(x=k, y=RuntimeEst, color="#EA6596"), size=1, show.legend=TRUE) +  # example 3
+  ggtitle(label="Runtimes vs Number of Samples", subtitle="For a psd matrix with 2, 25, and 50 rows") +
+  ylab("Runtime (s)") +
+  xlab("Samples") +
+  scale_color_manual(name="Legend", values=c("#46CC6D", "#2993EC", "#EA6596"), labels=c("2 rows", "25 rows", "50 rows"))
+
+# Plot of runtimes vs number of samples for n=2, with base method comparison
+ggplot(example1, aes(x=k, y=RuntimeEst)) +
+  geom_point(aes(color="#46CC6D"), size=1, show.legend=TRUE) +
+  geom_point(aes(x=k, y=RuntimeTrue, color="#6E6A73"), size=0.2, show.legend=TRUE) +
+  geom_line(aes(y=RuntimeTrue, color="#6E6A73"), linetype="dashed") +
+  ggtitle(label="Runtimes vs Number of Samples: Estimate vs Direct Method", subtitle="For a psd matrix with n=2 rows") +
+  ylab("Runtime (s)") +
+  xlab("Samples") +
+  scale_color_manual(name="Legend", values=c("#46CC6D", "#6E6A73"), labels=c("Sampling method", "Direct method"))
+
+# Plot of runtimes vs number of samples for n=25, with base method comparison
+ggplot(example2, aes(x=k, y=RuntimeEst)) +
+  geom_point(aes(color="#2993EC"), size=1, show.legend=TRUE) +
+  geom_point(aes(x=k, y=RuntimeTrue, color="#6E6A73"), size=0.2, show.legend=TRUE) +
+  geom_line(aes(y=RuntimeTrue, color="#6E6A73"), linetype="dashed") +
+  ggtitle(label="Runtimes vs Number of Samples: Estimate vs Direct Method", subtitle="For a psd matrix with n=25 rows") +
+  ylab("Runtime (s)") +
+  xlab("Samples") +
+  scale_color_manual(name="Legend", values=c("#2993EC", "#6E6A73"), labels=c("Sampling method", "Direct method"))
+
+# Plot of runtimes vs number of samples for n=50, with base method comparison
+ggplot(example3, aes(x=k, y=RuntimeEst)) +
+  geom_point(aes(color="#EA6596"), size=1, show.legend=TRUE) +
+  geom_point(aes(x=k, y=RuntimeTrue, color="#6E6A73"), size=0.2, show.legend=TRUE) +
+  geom_line(aes(y=RuntimeTrue, color="#6E6A73"), linetype="dashed") +
+  ggtitle(label="Runtimes vs Number of Samples: Estimate vs Direct Method", subtitle="For a psd matrix with n=50 rows") +
+  ylab("Runtime (s)") +
+  xlab("Samples") +
+  scale_color_manual(name="Legend", values=c("#EA6596", "#6E6A73"), labels=c("Sampling method", "Direct method"))
 ```
