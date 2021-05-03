@@ -8,7 +8,8 @@ output:
 
 ## Set Up
 ```{r}
-library(ggplot2)
+library(psych)    # for the trace method
+library(ggplot2)  # graphs
 ```
 
 ## Methods
@@ -55,31 +56,6 @@ traceEstimate <- function(A, k) {
   var      <- (1/(k-1)) * sum((samples - estimate)^2)  # compute the variance
   
   return(list("X" = estimate, "S" = var))
-}
-```
-
-```{r}
-# A method to compute the true trace of a matrix, for comparison with the RandNLA method.
-#
-# Parameters
-# ----------
-# A :  matrix()
-#      The nxn psd matrix for which to compute the trace
-#
-# Returns
-# -------
-# tr : double
-#      The trace of the input matrix
-#
-trace <- function(A) {
-  n <- nrow(A)
-  tr <- 0
-  
-  for(i in 1:n) {
-    tr <- tr + A[i,i]
-  }
-  
-  return(tr)
 }
 ```
 
@@ -144,7 +120,7 @@ for(n in N) {
   # Compute the true trace and record the runtime
   start <- Sys.time()
   
-  trace_true <- trace(A)
+  trace_true <- tr(A)
   runtime    <- Sys.time() - start
   
   # Record the true value and run time in the next length(K) rows
