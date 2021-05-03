@@ -6,6 +6,7 @@ output: html_notebook
 
 ## Set Up
 ```{r}
+library(psych)  # for the trace method
 ```
 
 ## Methods
@@ -41,32 +42,7 @@ drawTestM <- function(n, k) {
 ```
 
 ```{r}
-# A method to compute the true trace of a matrix, for use in the norm estimate.
-#
-# Parameters
-# ----------
-# A :  matrix()
-#      The nxn matrix for which to compute the trace
-#
-# Returns
-# -------
-# tr : double
-#      The trace of the input matrix
-#
-computeTrace <- function(A) {
-  n <- nrow(A)
-  tr <- 0
-  
-  for(i in 1:n) {
-    tr <- tr + A[i,i]
-  }
-  
-  return(tr)
-}
-```
-
-```{r}
-# A method to compute the true l-2p norm of a matrix, to compare with the estimate.
+# A method to compute the true (l-2p)^2p norm of a matrix, to compare with the estimate.
 #
 # Parameters
 # ----------
@@ -76,7 +52,7 @@ computeTrace <- function(A) {
 # Returns
 # -------
 # nrm : double
-#       The l-2p norm of the input matrix   
+#       The (l-2p)^2p norm of the input matrix   
 #
 computeNorm <- function(A, p) {
   n <- nrow(A)
@@ -92,8 +68,10 @@ computeNorm <- function(A, p) {
     nrm <- nrm + innersum^(1/(2*p))
   }
   
-  return(nrm)
+  return(nrm^(2*p))
 }
+
+# FIXME: incorrect value
 ```
 
 ```{r}
@@ -128,40 +106,39 @@ schattenEstimate <- function(B, p, k) {
   samples <- matrix(0, nrow=n, ncol=n)
   
   O <- drawTestM(n, k)  # draw the test matrix
-  print("O:")
-  print(O)
   Y <- B %*% O          # compute the sample matrix
-  print("Y:")
-  print(Y)
   X <- t(Y) %*% Y       # compute the Gram matrix  FIXME: becomes large very quickly
-  print("X:")
-  print(X)
-  
-  # Extract the strict upper triangle of X
+
+  # Extract the strict upper triangle of X  
   T_p <- X
   T_p[lower.tri(T_p)] <- 0
-  print(T_p)
+  diag(T_p) <- 0
 
   # Compute T^(p-1) by repeated multiplication
-  for(i in (1:p-1)) {
-    T_p <- T_p %*% T_p
+  if(p > 1) {
+    for(i in (1:p-1)) {
+      T_p <- T_p %*% T_p
+    }
   }
-  print(T_p)
   
   # Compute and return the estimate of the norm
-  V <- computeTrace(T_p %*% X)  
+  V <-(1/choose(k, p))  * tr(T_p %*% X)  # FIXME: use R's base function
   return(V)
 }
 ```
 
 ## Testing
 ```{r}
-#drawTestM(10, 3)
+y <- drawTestM(4, 3)
+norm(y[,2], type="2")
+
+drawTestM(5, 3)
 
 B <- matrix(rnorm(10*10, mean=0, sd=1), nrow=10, ncol=10)
 #trace(B)
-x <- schattenEstimate(B, 1, 10)  # compute the 2p = l4 norm of B
+x <- schattenEstimate(B, 1, 10)  # compute the 2p = l2 norm of B
 computeNorm(B, 1)  # test with Frobenius norm
+(norm(B, type="F"))^(2*1)
 ```
 
 ## Simulation
