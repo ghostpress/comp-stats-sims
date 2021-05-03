@@ -89,7 +89,7 @@ computeNorm <- function(A, p) {
 # Parameters
 # ----------
 # B :  matrix()
-#      The nxn matrix for which to estimate the l-2p norm
+#      The mxn matrix for which to estimate the l-2p norm
 # p :  int
 #      The power >0 of the norm
 # k :  int
@@ -101,44 +101,44 @@ computeNorm <- function(A, p) {
 #     The estimate of the l-2p norm
 #
 schattenEstimate <- function(B, p, k) {
-  n <- nrow(B)
+  m <- nrow(B)
+  n <- ncol(B)
   
-  samples <- matrix(0, nrow=n, ncol=n)
-  
-  O <- drawTestM(n, k)  # draw the test matrix
-  Y <- B %*% O          # compute the sample matrix
-  X <- t(Y) %*% Y       # compute the Gram matrix  FIXME: becomes large very quickly
+  O <- drawTestM(n, k)  # draw the test matrix (nxk)
+  Y <- B %*% O          # compute the sample matrix (mxk)
+  X <- t(Y) %*% Y       # compute the Gram matrix (kxk)   
 
   # Extract the strict upper triangle of X  
   T_p <- X
   T_p[lower.tri(T_p)] <- 0
   diag(T_p) <- 0
-
+  
   # Compute T^(p-1) by repeated multiplication
   if(p > 1) {
     for(i in (1:p-1)) {
       T_p <- T_p %*% T_p
     }
+  } else if(p == 1) {
+    T_p <- matrix(1, nrow=k, ncol=k)
   }
   
   # Compute and return the estimate of the norm
-  V <-(1/choose(k, p))  * tr(T_p %*% X)  # FIXME: use R's base function
+  V <- (1/choose(k, p))  * tr(T_p %*% X) 
   return(V)
 }
 ```
 
 ## Testing
 ```{r}
-y <- drawTestM(4, 3)
-norm(y[,2], type="2")
 
-drawTestM(5, 3)
 
-B <- matrix(rnorm(10*10, mean=0, sd=1), nrow=10, ncol=10)
-#trace(B)
-x <- schattenEstimate(B, 1, 10)  # compute the 2p = l2 norm of B
-computeNorm(B, 1)  # test with Frobenius norm
-(norm(B, type="F"))^(2*1)
+A <- matrix(rnorm(10*10, mean=0, sd=1), nrow=10, ncol=10)
+x <- schattenEstimate(A, 1, 10)  # compute the 2p = l2 norm of B
+#computeNorm(B, 1)               # test with Frobenius norm
+(norm(B, type="F"))
+
+
+
 ```
 
 ## Simulation
