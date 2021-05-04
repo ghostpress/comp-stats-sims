@@ -105,7 +105,7 @@ set.seed(987654321)
 N <- seq(from=1, to=50)
 K <- seq(from=2, to=100)
 
-# Create a data frame with the results
+# Create a data frame for the results
 results <- data.frame(matrix(ncol=9, nrow=length(N) * length(K)))
 colnames(results) <- c("n", "k", "Estimate", "TrueValue", "RMSE", "RuntimeEst", "RuntimeTrue", "SampleVariance", "SampleStdDev")
 
@@ -131,19 +131,19 @@ for(n in N) {
   
   index_true <- index_true + length(K)
   
+  # Compute the estimate of the trace for each number of samples k and record the runtime
   for(k in K) {
     results[index_est, "n"]    <- n
     results[index_est, "k"] <- k
 
-    # Compute the estimate of the trace and record the runtime
     new_start <- Sys.time()
   
     trace_est <- traceEstimate(A, k)
     results[index_est, "RuntimeEst"] <- Sys.time() - new_start
-    results[index_est, "Estimate"]       <- trace_est$X
+    results[index_est, "Estimate"]   <- trace_est$X
 
-    results[index_est, "SampleVariance"]  <- trace_est$S
-    results[index_est, "SampleStdDev"] <- sqrt(as.double(trace_est$S))
+    results[index_est, "SampleVariance"] <- trace_est$S
+    results[index_est, "SampleStdDev"]   <- sqrt(as.double(trace_est$S))
   
     index_est <- index_est + 1
   }
