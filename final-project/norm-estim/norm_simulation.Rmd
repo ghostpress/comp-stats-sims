@@ -115,8 +115,12 @@ schattenEstimate <- function(B, p, k) {
     T_p <- matrix(1, nrow=k, ncol=k)  # T^(p-1) = T^0
   }
   
+  # row <- c(1, k)
   # Compute T^(p-1) by repeated multiplication
   for(i in 1:(p-2)) {
+    #for(r in row) {
+    #  T_p[r] <- T_p[r]^2 # T_p %*% T_p
+    #}
     T_p <- T_p %*% T_p
   }
   
@@ -249,6 +253,9 @@ for(i in 1:nrow(results)) {
 
 ## Plot the Results
 ```{r}
+
+write.csv(results, "~/bu/year3/spring/ma589/comp-stats-sims/final-project/norm-estim/test.csv")
+
 # TODO: 
 #   plot runtime vs k vs p
 #   plot errors vs k vs p
