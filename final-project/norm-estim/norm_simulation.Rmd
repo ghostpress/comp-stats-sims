@@ -62,10 +62,12 @@ computeNorm <- function(A, p) {
   nrm <- 0
   
   for(i in (1:min(m,n))) {
-    nrm <- nrm + (sing_vals[i]^p)
+    nrm <- nrm + (sing_vals[i]^(2*p))
   }
   
-  return(nrm^(1/p))
+  nrm <- nrm^(1/(2*p))
+  
+  return(nrm^(2*p))
 }
 ```
 
@@ -105,8 +107,8 @@ schattenEstimate <- function(B, p, k) {
 
   # Extract the strict upper triangle of X  
   T_p <- X
-  T_p[lower.tri(T_p)] <- 0
-  diag(T_p) <- 0
+  T_p[lower.tri(T_p)] <- 0  # set the lower triangle to 0
+  diag(T_p) <- 0            # set the diagonals to 0
   
   # Compute T^(p-1) by repeated multiplication
   if(p > 1) {
@@ -114,11 +116,11 @@ schattenEstimate <- function(B, p, k) {
       T_p <- T_p %*% T_p
     }
   } else if(p == 1) {
-    T_p <- matrix(1, nrow=k, ncol=k)
+    T_p <- matrix(1, nrow=k, ncol=k)  # T^(p-1) = T^0
   }
   
   # Compute and return the estimate of the norm
-  V <- (1/choose(k, p))  * tr(T_p %*% X) 
+  V <- (1/choose(k, p)) * tr(T_p %*% X) 
   return(V)
 }
 ```
@@ -162,6 +164,23 @@ computeErr <- function(a, b) {
 }             
 ```
 
+## Testing
+```{r}
+set.seed(987654321)
+
+C <- matrix(rnorm(10*15), nrow=10, ncol=15)  # generate a random mxn matrix for the simulation
+
+#computeNorm(C, 0.5)  # THIS METHOD IS CORRECT
+#schattenEstimate(C, 0.5, 10)
+computeNorm(C, 1)
+schattenEstimate(C, 1, 10)
+computeNorm(C, 2)
+schattenEstimate(C, 2, 10)
+computeNorm(C, 3)
+schattenEstimate(C, 3, 10)
+
+```
+
 ## Simulation: Is the Estimate Faster? How Accurate is it?
 ```{r}
 set.seed(987654321)
@@ -172,7 +191,7 @@ m <- 200
 
 # Set up varying values for p (the power of the norm) and k (the number of samples)
 P <- seq(1, 100)
-K <- seq(2, 200) 
+K <- seq(2, 200) # FIXME: change to 200, 400 ? -> need the choose(k, p) to not return 0, as it does if k < p
 
 A <- matrix(rnorm(m*n), nrow=m, ncol=n)  # generate a random mxn matrix for the simulation
 
@@ -183,7 +202,7 @@ colnames(results) <- c("p", "k", "Estimate", "TrueValue", "RMSE", "RuntimeEst", 
 index_true <- 1
 index_est  <- 1
 
-for(p in P) {
+for(p in c(1, 2, 3)) {
   
   # Compute the true Schatten-2p norm and record the runtime
   start <- Sys.time()
@@ -215,10 +234,15 @@ for(p in P) {
   }
 }
 
+break;
+
 # Compute the errors
 for(i in 1:nrow(results)) {
   results[i, "RMSE"] <- computeErr(results[i, "Estimate"], results[i, "TrueValue"])$rms
 }
+
+# TODO:
+#   drop rows where k < p -> 
 ```
 
 ## Plot the Results
