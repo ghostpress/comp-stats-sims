@@ -159,34 +159,13 @@ computeErr <- function(a, b) {
 }             
 ```
 
-## Testing
-```{r}
-set.seed(987654321)
-
-C <- matrix(rnorm(10*15), nrow=10, ncol=15)  # generate a random mxn matrix for the simulation
-
-#computeNorm(C, 0.5)  # THIS METHOD IS CORRECT
-#schattenEstimate(C, 0.5, 10)
-computeNorm(C, 1)
-schattenEstimate(C, 1, 10)
-computeNorm(C, 2)
-schattenEstimate(C, 2, 10)
-computeNorm(C, 3)
-schattenEstimate(C, 3, 10)
-computeNorm(C, 4)
-schattenEstimate(C, 4, 10)
-
-
-
-```
-
 ## Simulation: Is the Estimate Faster? How Accurate is it?
 ```{r}
 set.seed(987654321)
 
-# Fix m = 100, n = 200
-n <- 100
-m <- 200
+# Fix m = 1000, n = 2000
+n <- 1000
+m <- 2000
 
 # Set up varying values for p (the power of the norm) and k (the number of samples)
 P <- seq(1, 100)
@@ -241,8 +220,18 @@ for(i in 1:nrow(results)) {
 
 ## Plot the Results
 ```{r}
+# First, need to clean up a little bit - some values are NaN or 0, some RMSE are Inf, and
+# for large values of p the norm is Inf
 
-write.csv(results, "~/bu/year3/spring/ma589/comp-stats-sims/final-project/norm-estim/test.csv")
+results_clean <- data.frame(results)
+results_clean <- na.omit(results_clean)                # drop NaN rows
+results_clean <- subset(results_clean, Estimate != 0)  # drop 0s
+
+# Drop rows with Inf norm values -- keep Inf RMSE rows for now
+results_clean <- subset(results_clean, Estimate != "-Inf") 
+results_clean <- subset(results_clean, Estimate != "Inf")  
+
+nrow(results) - nrow(results_clean)  # dropped this many rows
 
 # TODO: 
 #   plot runtime vs k vs p
