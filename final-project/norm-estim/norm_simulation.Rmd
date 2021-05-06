@@ -6,10 +6,11 @@ output: html_notebook
 
 ## Set Up
 ```{r}
-library(psych)       # for the trace method
-library(matrixcalc)  # for matrix.power function
-library(ggplot2)     # for plots
-library(purrr)       # for has_element function
+library(psych)        # for the trace method
+library(matrixcalc)   # for matrix.power function
+library(insight)      # for table
+library(ggplot2)      # for plots
+library(purrr)        # for has_element function
 
 theme_set(theme_minimal())
 ```
@@ -224,11 +225,11 @@ for(i in 1:nrow(results)) {
 
 ## Plot the Results
 ```{r}
-# First, need to clean up a little bit - some values are NaN or 0, some RMSE are Inf, and
+# First, need to clean up a little bit - some values are NaN, some RMSE are Inf, and
 # for large values of p the norm is Inf
 
 results_clean <- data.frame(results)
-results_clean <- na.omit(results_clean)                  # drop NaN rows
+results_clean <- na.omit(results_clean)   # drop NaN rows
 
 # Drop rows with Inf norm values -- keep Inf RMSE rows for now
 results_clean <- subset(results_clean, Estimate != "-Inf") 
@@ -243,14 +244,26 @@ results_err <- subset(results_clean, RMSE != "Inf")  # keep a separate df for no
 write.csv(results, file="~/bu/year3/spring/ma589/comp-stats-sims/final-project/norm-estim/results_raw.csv")
 write.csv(results_clean, file="~/bu/year3/spring/ma589/comp-stats-sims/final-project/norm-estim/results_clean.csv")
 write.csv(results_err, file="~/bu/year3/spring/ma589/comp-stats-sims/final-project/norm-estim/results_err.csv")
+
+# Why did the sampling method output NaN, 0, or +/-Inf? Try again for some examples:
+schattenEstimate(A, 56, 400)  # still NaN
+schattenEstimate(A, 58, 200)  # still Inf
+schattenEstimate(A, 68, 700)  # still 0
 ```
 
 ```{r}
+# If needed to clean up and "sweep", run the following lines:
+results_clean <- read.csv("./results_clean.csv")
+results_err   <- read.csv("./results_err.csv")
+
+fivenum(results_err$RMSE)
+
 # Plot of RMSE vs k for estimate
 ggplot(results_err, aes(x=k, y=RuntimeEst)) +
   geom_point(aes(x=k, y=RMSE), size=1) +
   ggtitle(label="RMSE vs Number of Samples") +
   xlab("Samples") +
+  ylab("") +
   theme(axis.line=element_line(color="black"))
 
 ggplot(results_err, aes(x=k, y=RuntimeEst)) +
@@ -258,6 +271,7 @@ ggplot(results_err, aes(x=k, y=RuntimeEst)) +
   scale_y_continuous(limits=c(0, 1e9)) +
   ggtitle(label="RMSE vs Number of Samples (Zoomed)") +
   xlab("Samples") +
+  ylab("")
   theme(axis.line=element_line(color="black"))
 
 # Plot of RMSE vs p for estimate
@@ -265,6 +279,7 @@ ggplot(results_err, aes(x=p, y=RuntimeEst)) +
   geom_point(aes(x=p, y=RMSE), size=1) +
   ggtitle(label="RMSE vs Norm Power") +
   xlab("Power") +
+  ylab("") +
   theme(axis.line=element_line(color="black"))
 
 ggplot(results_err, aes(x=p, y=RuntimeEst)) +
@@ -272,13 +287,14 @@ ggplot(results_err, aes(x=p, y=RuntimeEst)) +
   scale_y_continuous(limits=c(0, 5e8)) +
   ggtitle(label="RMSE vs Norm Power (Zoomed)") +
   xlab("Power") +
+  ylab("") +
   theme(axis.line=element_line(color="black"))
 
 
 # Plot of runtime vs k for estimate, with runtime of direct method for comparison
 ggplot(results_clean, aes(x=k, y=RuntimeEst)) +
   geom_point(color="#46CC6D", size=1) +
-  geom_hline(aes(yintercept=RuntimeTrue, color="#6E6A73"), linetype="dashed") +
+  geom_line(aes(y=RuntimeTrue, color="#6E6A73"), linetype="dashed") +
   ggtitle(label="Runtimes vs Number of Samples") +
   ylab("Time (s)") +                                                         
   xlab("Samples") +
@@ -314,7 +330,7 @@ ggplot(q1, aes(x=k, y=Estimate)) +
   geom_line(aes(x=k, y=Estimate), color="#F46431") +
   geom_line(aes(x=k, y=TrueValue, color="#6E6A73"), linetype="dashed") +
   scale_color_manual(name="Legend", values=c("#6E6A73"), labels=c("True Value")) +
-  ggtitle("Estimate vs Number of Samples", subtitle="First quantile, p = 1") +
+  ggtitle("Norm Estimate vs Number of Samples", subtitle="First quantile, p = 1") +
   xlab("Samples") +
   ylab("") +
   theme(axis.line=element_line(color="black"))
